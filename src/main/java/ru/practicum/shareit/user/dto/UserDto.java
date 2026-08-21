@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import ru.practicum.shareit.validation.Marker;
 
 /**
  * Представление пользователя во внешнем REST API.
@@ -16,10 +17,10 @@ public class UserDto {
 
     private Long id;
 
-    @NotBlank(message = "Имя не может быть пустым")
+    @NotBlank(message = "Имя не может быть пустым", groups = Marker.OnCreate.class)
     private String name;
 
-    @NotBlank(message = "Email не может быть пустым")
-    @Email(message = "Некорректный формат email")
+    @NotBlank(message = "Email не может быть пустым", groups = Marker.OnCreate.class)
+    @Email(message = "Некорректный формат email", groups = {Marker.OnCreate.class, Marker.OnUpdate.class})
     private String email;
 }

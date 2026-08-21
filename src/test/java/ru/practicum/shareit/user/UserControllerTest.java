@@ -108,6 +108,37 @@ class UserControllerTest {
     }
 
     @Test
+    void update_withBlankName_ignoresFieldAndReturns200() throws Exception {
+        UserDto requestDto = new UserDto(null, "  ", null);
+        UserDto responseDto = new UserDto(1L, "Ivan", "ivan@mail.ru");
+        when(userService.update(eq(1L), any(UserDto.class))).thenReturn(responseDto);
+
+        mockMvc.perform(patch("/users/1")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void update_withInvalidEmail_returns400() throws Exception {
+        UserDto requestDto = new UserDto(null, null, "not-an-email");
+
+        mockMvc.perform(patch("/users/1")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest());
+
+        verify(userService, never()).update(any(), any());
+    }
+
+    @Test
+    void findById_withNonNumericId_returns400() throws Exception {
+        mockMvc.perform(get("/users/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Некорректное значение параметра userId"));
+    }
+
+    @Test
     void findById_returns200() throws Exception {
         when(userService.findById(1L)).thenReturn(new UserDto(1L, "Ivan", "ivan@mail.ru"));
 

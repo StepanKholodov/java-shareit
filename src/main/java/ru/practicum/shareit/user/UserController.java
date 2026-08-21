@@ -1,8 +1,8 @@
 package ru.practicum.shareit.user;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import ru.practicum.shareit.user.dto.UserDto;
+import ru.practicum.shareit.validation.Marker;
 
 import java.util.Collection;
 
@@ -34,19 +35,21 @@ public class UserController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserDto create(@Valid @RequestBody UserDto userDto) {
+    public UserDto create(@Validated(Marker.OnCreate.class) @RequestBody UserDto userDto) {
         return userService.create(userDto);
     }
 
     /**
      * Частично обновляет пользователя: переданы могут быть только изменяемые поля.
+     * Поля, которые всё же переданы (например, email), должны быть корректны по формату.
      *
      * @param userId  id обновляемого пользователя
      * @param userDto новые значения полей
      * @return обновлённый пользователь
      */
     @PatchMapping("/{userId}")
-    public UserDto update(@PathVariable Long userId, @RequestBody UserDto userDto) {
+    public UserDto update(@PathVariable Long userId,
+                           @Validated(Marker.OnUpdate.class) @RequestBody UserDto userDto) {
         return userService.update(userId, userDto);
     }
 

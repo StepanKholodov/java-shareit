@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -89,5 +90,15 @@ class ErrorHandlerTest {
         ErrorResponse response = errorHandler.handleMessageNotReadable(ex);
 
         assertThat(response.getError()).isEqualTo("Некорректное тело запроса");
+    }
+
+    @Test
+    void handleTypeMismatch_returnsMessageWithParameterName() {
+        MethodArgumentTypeMismatchException ex = mock(MethodArgumentTypeMismatchException.class);
+        when(ex.getName()).thenReturn("X-Sharer-User-Id");
+
+        ErrorResponse response = errorHandler.handleTypeMismatch(ex);
+
+        assertThat(response.getError()).isEqualTo("Некорректное значение параметра X-Sharer-User-Id");
     }
 }

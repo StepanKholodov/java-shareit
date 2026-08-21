@@ -130,6 +130,13 @@ class ItemControllerTest {
     }
 
     @Test
+    void findById_withNonNumericId_returns400() throws Exception {
+        mockMvc.perform(get("/items/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Некорректное значение параметра itemId"));
+    }
+
+    @Test
     void findById_whenMissing_returns404() throws Exception {
         when(itemService.findById(404L)).thenThrow(new NotFoundException("Вещь с id 404 не найдена"));
 
