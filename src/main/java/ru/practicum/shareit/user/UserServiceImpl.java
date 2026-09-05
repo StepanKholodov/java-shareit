@@ -1,38 +1,36 @@
 package ru.practicum.shareit.user;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.dto.UserMapper;
-import ru.practicum.shareit.user.storage.UserStorage;
+import ru.practicum.shareit.user.storage.UserRepository;
 
 import java.util.Collection;
 import java.util.stream.Collectors;
 
 /**
- * Реализация {@link UserService} поверх in-memory хранилища {@link UserStorage}.
+ * Реализация {@link UserService} поверх {@link UserRepository}.
  */
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final UserStorage userStorage;
+    private final UserRepository userRepository;
 
     @Override
     public User getUserById(Long userId) {
-        return userStorage.findById(userId)
+        return userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
     }
 
     @Override
     public UserDto create(UserDto userDto) {
-        if (userStorage.existsByEmail(userDto.getEmail(), null)) {
-            throw new ConflictException("Пользователь с email " + userDto.getEmail() + " уже существует");
-        }
         User user = UserMapper.toUser(userDto);
-        return UserMapper.toUserDto(userStorage.create(user));
+        return UserMapper.toUserDto(saveOrThrowConflict(user));
     }
 
     @Override
@@ -40,15 +38,12 @@ public class UserServiceImpl implements UserService {
         User user = getUserById(userId);
 
         if (userDto.getEmail() != null && !userDto.getEmail().isBlank()) {
-            if (userStorage.existsByEmail(userDto.getEmail(), userId)) {
-                throw new ConflictException("Пользователь с email " + userDto.getEmail() + " уже существует");
-            }
             user.setEmail(userDto.getEmail());
         }
         if (userDto.getName() != null && !userDto.getName().isBlank()) {
             user.setName(userDto.getName());
         }
-        return UserMapper.toUserDto(userStorage.update(user));
+        return UserMapper.toUserDto(saveOrThrowConflict(user));
     }
 
     @Override
@@ -58,7 +53,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Collection<UserDto> findAll() {
-        return userStorage.findAll().stream()
+        return userRepository.findAll().stream()
                 .map(UserMapper::toUserDto)
                 .collect(Collectors.toList());
     }
@@ -66,6 +61,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public void delete(Long userId) {
         getUserById(userId);
-        userStorage.delete(userId);
+        userRepository.deleteById(userId);
+    }
+
+    private User saveOrThrowConflict(User user) {
+        try {
+            return userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("Пользователь с email " + user.getEmail() + " уже существует");
+        }
     }
 }

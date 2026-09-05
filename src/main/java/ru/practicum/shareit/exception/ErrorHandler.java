@@ -54,6 +54,17 @@ public class ErrorHandler {
     }
 
     /**
+     * @param e исключение нарушения бизнес-правила
+     * @return тело ответа {@code 400 Bad Request}
+     */
+    @ExceptionHandler(ValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleValidation(ValidationException e) {
+        log.warn("400: {}", e.getMessage());
+        return new ErrorResponse(e.getMessage());
+    }
+
+    /**
      * Обрабатывает ошибки валидации {@code @Valid}/{@code @Validated}-аннотированных DTO.
      *
      * @param e исключение, брошенное Spring MVC при провале Bean Validation

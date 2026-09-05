@@ -6,10 +6,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.user.storage.UserStorage;
+import ru.practicum.shareit.user.storage.UserRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +28,7 @@ import static org.mockito.Mockito.when;
 class UserServiceImplTest {
 
     @Mock
-    private UserStorage userStorage;
+    private UserRepository userRepository;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -41,7 +42,7 @@ class UserServiceImplTest {
 
     @Test
     void getUserById_whenFound_returnsUser() {
-        when(userStorage.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         User result = userService.getUserById(1L);
 
@@ -50,7 +51,7 @@ class UserServiceImplTest {
 
     @Test
     void getUserById_whenNotFound_throwsNotFoundException() {
-        when(userStorage.findById(99L)).thenReturn(Optional.empty());
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.getUserById(99L))
                 .isInstanceOf(NotFoundException.class)
@@ -60,8 +61,7 @@ class UserServiceImplTest {
     @Test
     void create_whenEmailFree_savesUser() {
         UserDto inputDto = new UserDto(null, "Ivan", "ivan@mail.ru");
-        when(userStorage.existsByEmail("ivan@mail.ru", null)).thenReturn(false);
-        when(userStorage.create(any(User.class))).thenReturn(user);
+        when(userRepository.save(any(User.class))).thenReturn(user);
 
         UserDto result = userService.create(inputDto);
 
@@ -73,20 +73,17 @@ class UserServiceImplTest {
     @Test
     void create_whenEmailTaken_throwsConflictException() {
         UserDto inputDto = new UserDto(null, "Ivan", "ivan@mail.ru");
-        when(userStorage.existsByEmail("ivan@mail.ru", null)).thenReturn(true);
+        when(userRepository.save(any(User.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
 
         assertThatThrownBy(() -> userService.create(inputDto))
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("ivan@mail.ru");
-
-        verify(userStorage, never()).create(any());
     }
 
     @Test
-    void update_withNewNameAndFreeEmail_updatesBothFields() {
-        when(userStorage.findById(1L)).thenReturn(Optional.of(user));
-        when(userStorage.existsByEmail("new@mail.ru", 1L)).thenReturn(false);
-        when(userStorage.update(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    void update_withNewNameAndEmail_updatesBothFields() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         UserDto result = userService.update(1L, new UserDto(null, "New name", "new@mail.ru"));
 
@@ -96,32 +93,29 @@ class UserServiceImplTest {
 
     @Test
     void update_whenEmailTakenByAnotherUser_throwsConflictException() {
-        when(userStorage.findById(1L)).thenReturn(Optional.of(user));
-        when(userStorage.existsByEmail("taken@mail.ru", 1L)).thenReturn(true);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
 
         assertThatThrownBy(() -> userService.update(1L, new UserDto(null, null, "taken@mail.ru")))
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("taken@mail.ru");
-
-        verify(userStorage, never()).update(any());
     }
 
     @Test
     void update_withBlankFields_keepsOriginalValues() {
-        when(userStorage.findById(1L)).thenReturn(Optional.of(user));
-        when(userStorage.update(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         UserDto result = userService.update(1L, new UserDto(null, "   ", "   "));
 
         assertThat(result.getName()).isEqualTo("Ivan");
         assertThat(result.getEmail()).isEqualTo("ivan@mail.ru");
-        verify(userStorage, never()).existsByEmail(any(), any());
     }
 
     @Test
     void update_withNullFields_keepsOriginalValues() {
-        when(userStorage.findById(1L)).thenReturn(Optional.of(user));
-        when(userStorage.update(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         UserDto result = userService.update(1L, new UserDto(null, null, null));
 
@@ -131,7 +125,7 @@ class UserServiceImplTest {
 
     @Test
     void update_whenUserNotFound_throwsNotFoundException() {
-        when(userStorage.findById(99L)).thenReturn(Optional.empty());
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.update(99L, new UserDto(null, "Name", null)))
                 .isInstanceOf(NotFoundException.class);
@@ -139,7 +133,7 @@ class UserServiceImplTest {
 
     @Test
     void findById_returnsMappedDto() {
-        when(userStorage.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         UserDto result = userService.findById(1L);
 
@@ -151,7 +145,7 @@ class UserServiceImplTest {
     @Test
     void findAll_returnsMappedList() {
         User second = new User(2L, "Petr", "petr@mail.ru");
-        when(userStorage.findAll()).thenReturn(List.of(user, second));
+        when(userRepository.findAll()).thenReturn(List.of(user, second));
 
         List<UserDto> result = List.copyOf(userService.findAll());
 
@@ -162,26 +156,26 @@ class UserServiceImplTest {
 
     @Test
     void findAll_whenEmpty_returnsEmptyCollection() {
-        when(userStorage.findAll()).thenReturn(List.of());
+        when(userRepository.findAll()).thenReturn(List.of());
 
         assertThat(userService.findAll()).isEmpty();
     }
 
     @Test
     void delete_whenUserExists_removesUser() {
-        when(userStorage.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         userService.delete(1L);
 
-        verify(userStorage, times(1)).delete(1L);
+        verify(userRepository, times(1)).deleteById(1L);
     }
 
     @Test
-    void delete_whenUserNotFound_throwsAndDoesNotCallStorageDelete() {
-        when(userStorage.findById(99L)).thenReturn(Optional.empty());
+    void delete_whenUserNotFound_throwsAndDoesNotCallRepositoryDelete() {
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.delete(99L)).isInstanceOf(NotFoundException.class);
 
-        verify(userStorage, never()).delete(anyLong());
+        verify(userRepository, never()).deleteById(anyLong());
     }
 }

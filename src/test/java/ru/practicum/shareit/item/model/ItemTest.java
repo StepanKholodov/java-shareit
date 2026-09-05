@@ -26,4 +26,20 @@ class ItemTest {
 
         assertThat(item.getRequest()).isEqualTo(request);
     }
+
+    @Test
+    void isOwnedBy_whenSameId_returnsTrue() {
+        User owner = new User(1L, "Ivan", "ivan@mail.ru");
+        Item item = new Item(1L, "Дрель", "Простая дрель", true, owner);
+
+        assertThat(item.isOwnedBy(1L)).isTrue();
+    }
+
+    @Test
+    void isOwnedBy_whenDifferentId_returnsFalse() {
+        User owner = new User(1L, "Ivan", "ivan@mail.ru");
+        Item item = new Item(1L, "Дрель", "Простая дрель", true, owner);
+
+        assertThat(item.isOwnedBy(2L)).isFalse();
+    }
 }

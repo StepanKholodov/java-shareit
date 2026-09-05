@@ -39,6 +39,13 @@ class ErrorHandlerTest {
     }
 
     @Test
+    void handleValidation_returnsExceptionMessage() {
+        ErrorResponse response = errorHandler.handleValidation(new ValidationException("некорректный запрос"));
+
+        assertThat(response.getError()).isEqualTo("некорректный запрос");
+    }
+
+    @Test
     void handleMethodArgumentNotValid_withFieldError_returnsFieldErrorMessage() {
         MethodArgumentNotValidException ex = mock(MethodArgumentNotValidException.class);
         BindingResult bindingResult = mock(BindingResult.class);

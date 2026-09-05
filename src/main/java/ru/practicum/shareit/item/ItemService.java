@@ -1,5 +1,6 @@
 package ru.practicum.shareit.item;
 
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 
 import java.util.Collection;
@@ -59,4 +60,17 @@ public interface ItemService {
      * @return найденные доступные вещи
      */
     Collection<ItemDto> search(String text);
+
+    /**
+     * Добавляет отзыв на вещь. Оставить отзыв может только пользователь,
+     * который уже завершил аренду этой вещи.
+     *
+     * @param userId     id автора отзыва
+     * @param itemId     id вещи
+     * @param commentDto текст отзыва
+     * @return созданный отзыв
+     * @throws ru.practicum.shareit.exception.NotFoundException   если пользователь или вещь не найдены
+     * @throws ru.practicum.shareit.exception.ValidationException если пользователь не завершал аренду этой вещи
+     */
+    CommentDto addComment(Long userId, Long itemId, CommentDto commentDto);
 }
