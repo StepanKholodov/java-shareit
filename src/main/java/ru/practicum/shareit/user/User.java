@@ -7,10 +7,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import ru.practicum.shareit.util.EntityUtils;
 
 /**
  * Пользователь сервиса ShareIt.
@@ -19,7 +19,6 @@ import lombok.Setter;
 @Table(name = "users")
 @Getter
 @Setter
-@EqualsAndHashCode(of = "id")
 @AllArgsConstructor
 @NoArgsConstructor
 public class User {
@@ -33,4 +32,21 @@ public class User {
 
     @Column(nullable = false, unique = true)
     private String email;
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || EntityUtils.getEffectiveClass(this) != EntityUtils.getEffectiveClass(o)) {
+            return false;
+        }
+        User other = (User) o;
+        return getId() != null && getId().equals(other.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return EntityUtils.getEffectiveClass(this).hashCode();
+    }
 }

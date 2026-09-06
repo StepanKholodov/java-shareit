@@ -10,12 +10,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.util.EntityUtils;
 
 /**
  * Вещь, которой пользователь (владелец) готов поделиться.
@@ -24,7 +24,6 @@ import ru.practicum.shareit.user.User;
 @Table(name = "items")
 @Getter
 @Setter
-@EqualsAndHashCode(of = "id")
 @NoArgsConstructor
 public class Item {
 
@@ -67,5 +66,22 @@ public class Item {
      */
     public boolean isOwnedBy(Long userId) {
         return owner.getId().equals(userId);
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || EntityUtils.getEffectiveClass(this) != EntityUtils.getEffectiveClass(o)) {
+            return false;
+        }
+        Item other = (Item) o;
+        return getId() != null && getId().equals(other.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return EntityUtils.getEffectiveClass(this).hashCode();
     }
 }

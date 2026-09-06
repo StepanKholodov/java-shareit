@@ -12,12 +12,12 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.util.EntityUtils;
 
 import java.time.LocalDateTime;
 
@@ -28,7 +28,6 @@ import java.time.LocalDateTime;
 @Table(name = "bookings")
 @Getter
 @Setter
-@EqualsAndHashCode(of = "id")
 @NoArgsConstructor
 @AllArgsConstructor
 public class Booking {
@@ -54,4 +53,21 @@ public class Booking {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private BookingStatus status;
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || EntityUtils.getEffectiveClass(this) != EntityUtils.getEffectiveClass(o)) {
+            return false;
+        }
+        Booking other = (Booking) o;
+        return getId() != null && getId().equals(other.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return EntityUtils.getEffectiveClass(this).hashCode();
+    }
 }

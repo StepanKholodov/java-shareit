@@ -2,6 +2,7 @@ package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookItemRequestDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.booking.dto.BookingMapper;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
@@ -31,6 +33,7 @@ public class BookingServiceImpl implements BookingService {
     private final UserService userService;
 
     @Override
+    @Transactional
     public BookingDto create(Long bookerId, BookItemRequestDto requestDto) {
         User booker = userService.getUserById(bookerId);
         Item item = itemRepository.findById(requestDto.getItemId())
@@ -51,6 +54,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
     public BookingDto approve(Long ownerId, Long bookingId, boolean approved) {
         Booking booking = getBookingOrThrow(bookingId);
         if (!booking.getItem().isOwnedBy(ownerId)) {

@@ -9,12 +9,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.util.EntityUtils;
 
 import java.time.LocalDateTime;
 
@@ -25,7 +25,6 @@ import java.time.LocalDateTime;
 @Table(name = "comments")
 @Getter
 @Setter
-@EqualsAndHashCode(of = "id")
 @NoArgsConstructor
 public class Comment {
 
@@ -46,4 +45,21 @@ public class Comment {
 
     @Column(nullable = false)
     private LocalDateTime created;
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || EntityUtils.getEffectiveClass(this) != EntityUtils.getEffectiveClass(o)) {
+            return false;
+        }
+        Comment other = (Comment) o;
+        return getId() != null && getId().equals(other.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return EntityUtils.getEffectiveClass(this).hashCode();
+    }
 }
