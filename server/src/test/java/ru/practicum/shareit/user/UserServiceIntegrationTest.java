@@ -2,9 +2,11 @@ package ru.practicum.shareit.user;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import ru.practicum.shareit.AbstractIntegrationTest;
 import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.user.dto.UserDto;
 
 import java.util.List;
@@ -14,14 +16,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Интеграционный тест на реальной (H2) базе: проверяет, что уникальность email
- * реально обеспечивается ограничением БД (а не только приложением), и что
- * основные операции корректно проходят через реальный {@code UserRepository}.
+ * и ссылочная целостность (например, вещи владельца) реально обеспечиваются
+ * ограничениями БД, а не только приложением.
  */
-@SpringBootTest
-class UserServiceIntegrationTest {
+class UserServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private ItemRepository itemRepository;
 
     @Test
     void create_savesUserWithGeneratedId() {
@@ -89,5 +93,15 @@ class UserServiceIntegrationTest {
         userService.delete(created.getId());
 
         assertThatThrownBy(() -> userService.findById(created.getId())).isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void delete_whenUserOwnsItems_throwsConflictAndKeepsUser() {
+        User owner = createUser("usvc-delete-owner@mail.ru");
+        itemRepository.save(new Item(null, "Дрель", "desc", true, owner));
+
+        assertThatThrownBy(() -> userService.delete(owner.getId())).isInstanceOf(ConflictException.class);
+
+        assertThat(userService.findById(owner.getId())).isNotNull();
     }
 }

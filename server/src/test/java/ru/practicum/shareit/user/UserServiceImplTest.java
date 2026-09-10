@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -73,11 +74,23 @@ class UserServiceImplTest {
     @Test
     void create_whenEmailTaken_throwsConflictException() {
         UserDto inputDto = new UserDto(null, "Ivan", "ivan@mail.ru");
-        when(userRepository.save(any(User.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
+        when(userRepository.save(any(User.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint \"uq_users_email\""));
 
         assertThatThrownBy(() -> userService.create(inputDto))
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("ivan@mail.ru");
+    }
+
+    @Test
+    void create_whenUnrelatedConstraintViolated_propagatesRawException() {
+        UserDto inputDto = new UserDto(null, "Ivan", "ivan@mail.ru");
+        when(userRepository.save(any(User.class)))
+                .thenThrow(new DataIntegrityViolationException("value too long for type character varying(255)"));
+
+        assertThatThrownBy(() -> userService.create(inputDto))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .isNotInstanceOf(ConflictException.class);
     }
 
     @Test
@@ -94,7 +107,8 @@ class UserServiceImplTest {
     @Test
     void update_whenEmailTakenByAnotherUser_throwsConflictException() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.save(any(User.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
+        when(userRepository.save(any(User.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint \"uq_users_email\""));
 
         assertThatThrownBy(() -> userService.update(1L, new UserDto(null, null, "taken@mail.ru")))
                 .isInstanceOf(ConflictException.class)
@@ -168,6 +182,15 @@ class UserServiceImplTest {
         userService.delete(1L);
 
         verify(userRepository, times(1)).deleteById(1L);
+    }
+
+    @Test
+    void delete_whenUserHasDependentData_throwsConflictException() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        doThrow(new DataIntegrityViolationException("violates foreign key constraint \"fk_items_owner\""))
+                .when(userRepository).deleteById(1L);
+
+        assertThatThrownBy(() -> userService.delete(1L)).isInstanceOf(ConflictException.class);
     }
 
     @Test

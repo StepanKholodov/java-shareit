@@ -128,4 +128,28 @@ class UserControllerTest {
 
         verify(userClient, never()).update(anyLong(), any());
     }
+
+    @Test
+    void create_withNameTooLong_returns400() throws Exception {
+        UserDto requestDto = new UserDto(null, "и".repeat(256), "ivan@mail.ru");
+
+        mockMvc.perform(post("/users")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest());
+
+        verify(userClient, never()).create(any());
+    }
+
+    @Test
+    void update_withEmailTooLong_returns400() throws Exception {
+        UserDto requestDto = new UserDto(null, null, "a".repeat(315) + "@mail.ru");
+
+        mockMvc.perform(patch("/users/1")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest());
+
+        verify(userClient, never()).update(anyLong(), any());
+    }
 }

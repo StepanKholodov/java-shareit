@@ -150,4 +150,41 @@ class ItemControllerTest {
 
         verify(itemClient, never()).addComment(anyLong(), anyLong(), any());
     }
+
+    @Test
+    void create_withNameTooLong_returns400() throws Exception {
+        ItemDto requestDto = new ItemDto(null, "д".repeat(256), "Простая дрель", true);
+
+        mockMvc.perform(post("/items")
+                        .header("X-Sharer-User-Id", 1L)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest());
+
+        verify(itemClient, never()).create(anyLong(), any());
+    }
+
+    @Test
+    void update_withDescriptionTooLong_returns400() throws Exception {
+        ItemDto requestDto = new ItemDto(null, null, "д".repeat(2001), null);
+
+        mockMvc.perform(patch("/items/1")
+                        .header("X-Sharer-User-Id", 1L)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void addComment_withTextTooLong_returns400() throws Exception {
+        CommentDto requestDto = new CommentDto(null, "д".repeat(2001));
+
+        mockMvc.perform(post("/items/1/comment")
+                        .header("X-Sharer-User-Id", 2L)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest());
+
+        verify(itemClient, never()).addComment(anyLong(), anyLong(), any());
+    }
 }

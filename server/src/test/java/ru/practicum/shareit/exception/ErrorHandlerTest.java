@@ -1,6 +1,7 @@
 package ru.practicum.shareit.exception;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -107,5 +108,14 @@ class ErrorHandlerTest {
         ErrorResponse response = errorHandler.handleTypeMismatch(ex);
 
         assertThat(response.getError()).isEqualTo("Некорректное значение параметра X-Sharer-User-Id");
+    }
+
+    @Test
+    void handleDataIntegrityViolation_returnsGenericMessage() {
+        DataIntegrityViolationException ex = new DataIntegrityViolationException("value too long for column");
+
+        ErrorResponse response = errorHandler.handleDataIntegrityViolation(ex);
+
+        assertThat(response.getError()).isEqualTo("Некорректные данные");
     }
 }

@@ -91,4 +91,17 @@ class ItemRequestControllerTest {
 
         verify(itemRequestClient, never()).create(anyLong(), any());
     }
+
+    @Test
+    void create_withDescriptionTooLong_returns400() throws Exception {
+        ItemRequestDto requestDto = new ItemRequestDto("д".repeat(2001));
+
+        mockMvc.perform(post("/requests")
+                        .header("X-Sharer-User-Id", 1L)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest());
+
+        verify(itemRequestClient, never()).create(anyLong(), any());
+    }
 }

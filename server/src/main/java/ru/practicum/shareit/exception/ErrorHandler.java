@@ -1,6 +1,7 @@
 package ru.practicum.shareit.exception;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -131,5 +132,21 @@ public class ErrorHandler {
     public ErrorResponse handleTypeMismatch(MethodArgumentTypeMismatchException e) {
         log.warn("400: некорректное значение параметра {}", e.getName());
         return new ErrorResponse("Некорректное значение параметра " + e.getName());
+    }
+
+    /**
+     * Обрабатывает нарушения ограничений БД, не распознанные более специфичными
+     * обработчиками (например, слишком длинное значение поля). Более конкретные
+     * причины (скажем, занятый email) сервисы преобразуют в {@link ConflictException}
+     * до того, как исключение дойдёт сюда.
+     *
+     * @param e исключение о нарушении ограничения БД
+     * @return тело ответа {@code 400 Bad Request}
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleDataIntegrityViolation(DataIntegrityViolationException e) {
+        log.warn("400: нарушение ограничения БД ({})", e.getMessage());
+        return new ErrorResponse("Некорректные данные");
     }
 }

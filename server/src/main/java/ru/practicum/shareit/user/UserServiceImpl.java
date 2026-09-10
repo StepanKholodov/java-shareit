@@ -61,14 +61,27 @@ public class UserServiceImpl implements UserService {
     @Override
     public void delete(Long userId) {
         getUserById(userId);
-        userRepository.deleteById(userId);
+        try {
+            userRepository.deleteById(userId);
+        } catch (DataIntegrityViolationException e) {
+            throw new ConflictException("Невозможно удалить пользователя с id " + userId
+                    + ": с ним связаны другие данные (вещи, бронирования, отзывы или запросы)");
+        }
     }
 
     private User saveOrThrowConflict(User user) {
         try {
             return userRepository.save(user);
         } catch (DataIntegrityViolationException e) {
-            throw new ConflictException("Пользователь с email " + user.getEmail() + " уже существует");
+            if (isEmailUniqueViolation(e)) {
+                throw new ConflictException("Пользователь с email " + user.getEmail() + " уже существует");
+            }
+            throw e;
         }
+    }
+
+    private boolean isEmailUniqueViolation(DataIntegrityViolationException e) {
+        String message = e.getMostSpecificCause().getMessage();
+        return message != null && message.toUpperCase().contains("UQ_USERS_EMAIL");
     }
 }
