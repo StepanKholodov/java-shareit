@@ -10,8 +10,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.exception.ErrorHandler;
 import ru.practicum.shareit.exception.ForbiddenException;
 import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
+import ru.practicum.shareit.item.dto.CommentDto;
 import ru.practicum.shareit.item.dto.ItemDto;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -23,6 +26,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -130,6 +134,19 @@ class ItemControllerTest {
     }
 
     @Test
+    void findById_includesNullBookingAndCommentFieldsInResponse() throws Exception {
+        ItemDto responseDto = new ItemDto(1L, "Дрель", "Простая дрель", true);
+        responseDto.setComments(List.of());
+        when(itemService.findById(1L)).thenReturn(responseDto);
+
+        mockMvc.perform(get("/items/1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("\"lastBooking\":null")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("\"nextBooking\":null")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("\"comments\":[]")));
+    }
+
+    @Test
     void findById_withNonNumericId_returns400() throws Exception {
         mockMvc.perform(get("/items/abc"))
                 .andExpect(status().isBadRequest())
@@ -172,5 +189,46 @@ class ItemControllerTest {
         mockMvc.perform(get("/items/search").param("text", "шуруповерт"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void addComment_withValidBody_returns201() throws Exception {
+        CommentDto requestDto = new CommentDto(null, "Отличная дрель", null, null);
+        CommentDto responseDto = new CommentDto(1L, "Отличная дрель", "Petr", LocalDateTime.now());
+        when(itemService.addComment(eq(2L), eq(1L), any(CommentDto.class))).thenReturn(responseDto);
+
+        mockMvc.perform(post("/items/1/comment")
+                        .header("X-Sharer-User-Id", 2L)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.text").value("Отличная дрель"))
+                .andExpect(jsonPath("$.authorName").value("Petr"));
+    }
+
+    @Test
+    void addComment_withBlankText_returns400() throws Exception {
+        CommentDto requestDto = new CommentDto(null, "   ", null, null);
+
+        mockMvc.perform(post("/items/1/comment")
+                        .header("X-Sharer-User-Id", 2L)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest());
+
+        verify(itemService, never()).addComment(anyLong(), anyLong(), any());
+    }
+
+    @Test
+    void addComment_whenNoCompletedBooking_returns400WithErrorBody() throws Exception {
+        CommentDto requestDto = new CommentDto(null, "Отличная дрель", null, null);
+        when(itemService.addComment(eq(2L), eq(1L), any(CommentDto.class)))
+                .thenThrow(new ValidationException("Пользователь с id 2 не завершал аренду вещи с id 1, отзыв недоступен"));
+
+        mockMvc.perform(post("/items/1/comment")
+                        .header("X-Sharer-User-Id", 2L)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest());
     }
 }
