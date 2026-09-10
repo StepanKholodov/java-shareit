@@ -17,6 +17,8 @@ import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.storage.CommentRepository;
 import ru.practicum.shareit.item.storage.ItemRepository;
+import ru.practicum.shareit.request.ItemRequest;
+import ru.practicum.shareit.request.storage.ItemRequestRepository;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserService;
 
@@ -47,6 +49,9 @@ class ItemServiceImplTest {
 
     @Mock
     private CommentRepository commentRepository;
+
+    @Mock
+    private ItemRequestRepository itemRequestRepository;
 
     @InjectMocks
     private ItemServiceImpl itemService;
@@ -81,6 +86,34 @@ class ItemServiceImplTest {
         when(userService.getUserById(99L)).thenThrow(new NotFoundException("Пользователь с id 99 не найден"));
 
         assertThatThrownBy(() -> itemService.create(99L, inputDto)).isInstanceOf(NotFoundException.class);
+
+        verify(itemRepository, never()).save(any());
+    }
+
+    @Test
+    void create_withRequestId_linksItemToRequest() {
+        ItemDto inputDto = new ItemDto(null, "Дрель", "Простая дрель", true);
+        inputDto.setRequestId(5L);
+        ItemRequest request = new ItemRequest();
+        request.setId(5L);
+        item.setRequest(request);
+        when(userService.getUserById(1L)).thenReturn(owner);
+        when(itemRequestRepository.findById(5L)).thenReturn(Optional.of(request));
+        when(itemRepository.save(any(Item.class))).thenReturn(item);
+
+        ItemDto result = itemService.create(1L, inputDto);
+
+        assertThat(result.getRequestId()).isEqualTo(5L);
+    }
+
+    @Test
+    void create_whenRequestMissing_throwsNotFoundAndDoesNotSave() {
+        ItemDto inputDto = new ItemDto(null, "Дрель", "Простая дрель", true);
+        inputDto.setRequestId(404L);
+        when(userService.getUserById(1L)).thenReturn(owner);
+        when(itemRequestRepository.findById(404L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> itemService.create(1L, inputDto)).isInstanceOf(NotFoundException.class);
 
         verify(itemRepository, never()).save(any());
     }

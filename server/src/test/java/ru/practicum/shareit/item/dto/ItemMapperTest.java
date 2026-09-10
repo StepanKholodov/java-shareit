@@ -2,6 +2,7 @@ package ru.practicum.shareit.item.dto;
 
 import org.junit.jupiter.api.Test;
 import ru.practicum.shareit.item.model.Item;
+import ru.practicum.shareit.request.ItemRequest;
 import ru.practicum.shareit.user.User;
 
 import java.lang.reflect.Constructor;
@@ -29,13 +30,39 @@ class ItemMapperTest {
         User owner = new User(1L, "Ivan", "ivan@mail.ru");
         ItemDto dto = new ItemDto(1L, "Дрель", "Простая дрель", true);
 
-        Item item = ItemMapper.toItem(dto, owner);
+        Item item = ItemMapper.toItem(dto, owner, null);
 
         assertThat(item.getId()).isEqualTo(1L);
         assertThat(item.getName()).isEqualTo("Дрель");
         assertThat(item.getDescription()).isEqualTo("Простая дрель");
         assertThat(item.getAvailable()).isTrue();
         assertThat(item.getOwner()).isEqualTo(owner);
+        assertThat(item.getRequest()).isNull();
+    }
+
+    @Test
+    void toItem_withRequest_assignsRequest() {
+        User owner = new User(1L, "Ivan", "ivan@mail.ru");
+        ItemRequest request = new ItemRequest();
+        request.setId(5L);
+        ItemDto dto = new ItemDto(1L, "Дрель", "Простая дрель", true);
+
+        Item item = ItemMapper.toItem(dto, owner, request);
+
+        assertThat(item.getRequest()).isEqualTo(request);
+    }
+
+    @Test
+    void toItemDto_withRequest_mapsRequestId() {
+        User owner = new User(1L, "Ivan", "ivan@mail.ru");
+        ItemRequest request = new ItemRequest();
+        request.setId(5L);
+        Item item = new Item(1L, "Дрель", "Простая дрель", true, owner);
+        item.setRequest(request);
+
+        ItemDto dto = ItemMapper.toItemDto(item);
+
+        assertThat(dto.getRequestId()).isEqualTo(5L);
     }
 
     @Test

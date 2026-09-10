@@ -1,7 +1,23 @@
 package ru.practicum.shareit.request.dto;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
 /**
- * TODO Sprint add-item-requests.
+ * Представление запроса на вещь во внешнем REST API. Валидация формата
+ * входных данных выполняется на стороне gateway.
  */
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class ItemRequestDto {
+
+    private Long id;
+    private String description;
+    private LocalDateTime created;
+    private List<ItemRequestItemDto> items;
 }

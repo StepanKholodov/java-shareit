@@ -9,7 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -46,10 +45,10 @@ public class Item {
 
     /**
      * Запрос, в ответ на который была добавлена эта вещь. {@code null}, если вещь
-     * добавлена не по запросу. Не персистится — полноценно заработает в спринте
-     * add-item-requests, когда появится таблица requests.
+     * добавлена не по запросу.
      */
-    @Transient
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "request_id")
     private ItemRequest request;
 
     public Item(Long id, String name, String description, Boolean available, User owner) {
