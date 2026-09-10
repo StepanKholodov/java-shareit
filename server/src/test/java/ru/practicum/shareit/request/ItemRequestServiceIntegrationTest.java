@@ -2,13 +2,12 @@ package ru.practicum.shareit.request;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import ru.practicum.shareit.AbstractIntegrationTest;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.request.storage.ItemRequestRepository;
 import ru.practicum.shareit.user.User;
-import ru.practicum.shareit.user.storage.UserRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,29 +15,19 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Интеграционный тест на реальной (H2) базе, без транзакции на самом тесте:
- * границу сессии задаёт только {@code @Transactional} сервисных методов.
  * Проверяет, что обращение к ленивым ассоциациям ({@code Item.owner}) после
  * возврата из репозитория не бросает {@link org.hibernate.LazyInitializationException}.
  */
-@SpringBootTest
-class ItemRequestServiceIntegrationTest {
+class ItemRequestServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private ItemRequestService itemRequestService;
-
-    @Autowired
-    private UserRepository userRepository;
 
     @Autowired
     private ItemRepository itemRepository;
 
     @Autowired
     private ItemRequestRepository itemRequestRepository;
-
-    private User createUser(String email) {
-        return userRepository.save(new User(null, "User " + email, email));
-    }
 
     @Test
     void create_doesNotThrowLazyInitializationException() {

@@ -2,13 +2,12 @@ package ru.practicum.shareit.booking;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import ru.practicum.shareit.AbstractIntegrationTest;
 import ru.practicum.shareit.booking.dto.BookItemRequestDto;
 import ru.practicum.shareit.booking.dto.BookingDto;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.storage.ItemRepository;
 import ru.practicum.shareit.user.User;
-import ru.practicum.shareit.user.storage.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,28 +16,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * Интеграционный тест на реальной (H2) базе, без транзакции на самом тесте:
- * границу сессии задаёт только {@code @Transactional} сервисных методов.
- * Так проверяется, что обращение к ленивым ассоциациям ({@code Booking.item},
+ * Проверяет, что обращение к ленивым ассоциациям ({@code Booking.item},
  * {@code Booking.item.owner}) после возврата из репозитория не бросает
  * {@link org.hibernate.LazyInitializationException}.
  */
-@SpringBootTest
-class BookingServiceIntegrationTest {
+class BookingServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private BookingService bookingService;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
     private ItemRepository itemRepository;
-
-    private User createUser(String email) {
-        User user = new User(null, "User " + email, email);
-        return userRepository.save(user);
-    }
 
     private Item createItem(User owner) {
         Item item = new Item(null, "Дрель", "desc", true, owner);
@@ -101,6 +89,21 @@ class BookingServiceIntegrationTest {
         List<BookingDto> result = List.copyOf(bookingService.findAllByOwner(owner.getId(), BookingState.ALL));
 
         assertThat(result).hasSize(1);
+        assertThat(result.get(0).getItem().getName()).isEqualTo("Дрель");
+    }
+
+    @Test
+    void findAllByBooker_doesNotThrowLazyInitializationException() {
+        User owner = createUser("owner-bylist@mail.ru");
+        User booker = createUser("booker-bylist@mail.ru");
+        Item item = createItem(owner);
+        bookingService.create(booker.getId(), new BookItemRequestDto(
+                item.getId(), LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2)));
+
+        List<BookingDto> result = List.copyOf(bookingService.findAllByBooker(booker.getId(), BookingState.ALL));
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getBooker().getId()).isEqualTo(booker.getId());
         assertThat(result.get(0).getItem().getName()).isEqualTo("Дрель");
     }
 }

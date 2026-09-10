@@ -2,7 +2,7 @@ package ru.practicum.shareit.item;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import ru.practicum.shareit.AbstractIntegrationTest;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.booking.storage.BookingRepository;
@@ -13,7 +13,6 @@ import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.ItemRequestService;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import ru.practicum.shareit.user.User;
-import ru.practicum.shareit.user.storage.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,14 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Интеграционный тест на реальной (H2) базе, без транзакции на самом тесте:
- * границу сессии задаёт только {@code @Transactional} сервисных методов.
  * Проверяет, что обращение к ленивым ассоциациям ({@code Item.owner},
  * {@code Booking.item}, {@code Comment.item}) после возврата из репозитория
  * не бросает {@link org.hibernate.LazyInitializationException}.
  */
-@SpringBootTest
-class ItemServiceIntegrationTest {
+class ItemServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private ItemService itemService;
@@ -38,14 +34,7 @@ class ItemServiceIntegrationTest {
     private ItemRequestService itemRequestService;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
     private BookingRepository bookingRepository;
-
-    private User createUser(String email) {
-        return userRepository.save(new User(null, "User " + email, email));
-    }
 
     @Test
     void create_savesItemWithOwner() {
