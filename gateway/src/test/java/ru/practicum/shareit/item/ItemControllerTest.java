@@ -173,6 +173,34 @@ class ItemControllerTest {
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(requestDto)))
                 .andExpect(status().isBadRequest());
+
+        verify(itemClient, never()).update(anyLong(), anyLong(), any());
+    }
+
+    @Test
+    void update_withEmptyName_returns400() throws Exception {
+        ItemDto requestDto = new ItemDto(null, "", null, null);
+
+        mockMvc.perform(patch("/items/1")
+                        .header("X-Sharer-User-Id", 1L)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest());
+
+        verify(itemClient, never()).update(anyLong(), anyLong(), any());
+    }
+
+    @Test
+    void update_withEmptyDescription_returns400() throws Exception {
+        ItemDto requestDto = new ItemDto(null, null, "", null);
+
+        mockMvc.perform(patch("/items/1")
+                        .header("X-Sharer-User-Id", 1L)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest());
+
+        verify(itemClient, never()).update(anyLong(), anyLong(), any());
     }
 
     @Test

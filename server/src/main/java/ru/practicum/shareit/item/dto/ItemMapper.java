@@ -25,13 +25,18 @@ public final class ItemMapper {
     }
 
     /**
-     * @param itemDto DTO, полученный из запроса
+     * Используется только при создании вещи, поэтому {@code id} из DTO намеренно
+     * игнорируется: доверять клиентскому {@code id} нельзя — иначе
+     * {@code JpaRepository.save()} посчитает переданную с непустым id сущность
+     * уже существующей и молча перезапишет чужую запись вместо создания новой.
+     *
+     * @param itemDto DTO, полученный из запроса на создание
      * @param owner   владелец, которому будет принадлежать вещь
      * @param request запрос, в ответ на который добавляется вещь, либо {@code null}
-     * @return сущность вещи
+     * @return новая сущность вещи без id
      */
     public static Item toItem(ItemDto itemDto, User owner, ItemRequest request) {
-        Item item = new Item(itemDto.getId(), itemDto.getName(), itemDto.getDescription(), itemDto.getAvailable(), owner);
+        Item item = new Item(null, itemDto.getName(), itemDto.getDescription(), itemDto.getAvailable(), owner);
         item.setRequest(request);
         return item;
     }

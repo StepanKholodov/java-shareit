@@ -130,6 +130,30 @@ class UserControllerTest {
     }
 
     @Test
+    void update_withEmptyName_returns400() throws Exception {
+        UserDto requestDto = new UserDto(null, "", null);
+
+        mockMvc.perform(patch("/users/1")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest());
+
+        verify(userClient, never()).update(anyLong(), any());
+    }
+
+    @Test
+    void update_withEmptyEmail_returns400() throws Exception {
+        UserDto requestDto = new UserDto(null, null, "");
+
+        mockMvc.perform(patch("/users/1")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest());
+
+        verify(userClient, never()).update(anyLong(), any());
+    }
+
+    @Test
     void create_withNameTooLong_returns400() throws Exception {
         UserDto requestDto = new UserDto(null, "и".repeat(256), "ivan@mail.ru");
 

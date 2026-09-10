@@ -19,10 +19,15 @@ public final class UserMapper {
     }
 
     /**
-     * @param userDto DTO, полученный из запроса
-     * @return сущность пользователя
+     * Используется только при создании пользователя, поэтому {@code id} из DTO
+     * намеренно игнорируется: доверять клиентскому {@code id} нельзя — иначе
+     * {@code JpaRepository.save()} посчитает переданную с непустым id сущность
+     * уже существующей и молча перезапишет чужую запись вместо создания новой.
+     *
+     * @param userDto DTO, полученный из запроса на создание
+     * @return новая сущность пользователя без id
      */
     public static User toUser(UserDto userDto) {
-        return new User(userDto.getId(), userDto.getName(), userDto.getEmail());
+        return new User(null, userDto.getName(), userDto.getEmail());
     }
 }

@@ -22,14 +22,22 @@ class UserMapperTest {
     }
 
     @Test
-    void toUser_mapsAllFields() {
-        UserDto dto = new UserDto(1L, "Ivan", "ivan@mail.ru");
+    void toUser_mapsNameAndEmail() {
+        UserDto dto = new UserDto(null, "Ivan", "ivan@mail.ru");
 
         User user = UserMapper.toUser(dto);
 
-        assertThat(user.getId()).isEqualTo(1L);
         assertThat(user.getName()).isEqualTo("Ivan");
         assertThat(user.getEmail()).isEqualTo("ivan@mail.ru");
+    }
+
+    @Test
+    void toUser_ignoresClientSuppliedId() {
+        UserDto dto = new UserDto(99L, "Ivan", "ivan@mail.ru");
+
+        User user = UserMapper.toUser(dto);
+
+        assertThat(user.getId()).isNull();
     }
 
     @Test

@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import ru.practicum.shareit.validation.Marker;
+import ru.practicum.shareit.validation.NullOrNotBlank;
 
 /**
  * Представление вещи, приходящее от клиента gateway.
@@ -19,11 +20,13 @@ public class ItemDto {
     private Long id;
 
     @NotBlank(message = "Название не может быть пустым", groups = Marker.OnCreate.class)
+    @NullOrNotBlank(message = "Название не может быть пустой строкой", groups = Marker.OnUpdate.class)
     @Size(max = 255, message = "Название не может быть длиннее 255 символов",
             groups = {Marker.OnCreate.class, Marker.OnUpdate.class})
     private String name;
 
     @NotBlank(message = "Описание не может быть пустым", groups = Marker.OnCreate.class)
+    @NullOrNotBlank(message = "Описание не может быть пустой строкой", groups = Marker.OnUpdate.class)
     @Size(max = 2000, message = "Описание не может быть длиннее 2000 символов",
             groups = {Marker.OnCreate.class, Marker.OnUpdate.class})
     private String description;

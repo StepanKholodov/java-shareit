@@ -1,16 +1,23 @@
 package ru.practicum.shareit.client;
 
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.util.Timeout;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriBuilderFactory;
+import ru.practicum.shareit.exception.ErrorResponse;
 import ru.practicum.shareit.web.RequestHeaders;
 
 import java.util.List;
@@ -36,9 +43,17 @@ public class BaseClient {
      * @return {@link RestTemplate}, настроенный на базовый URL и Apache HttpClient 5
      */
     protected static RestTemplate buildRestTemplate(RestTemplateBuilder builder, String baseUrl) {
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(Timeout.ofSeconds(5))
+                .setResponseTimeout(Timeout.ofSeconds(10))
+                .build();
+        CloseableHttpClient httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .build();
+        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
         return builder
                 .uriTemplateHandler(new DefaultUriBuilderFactory(baseUrl))
-                .requestFactory((Supplier<ClientHttpRequestFactory>) HttpComponentsClientHttpRequestFactory::new)
+                .requestFactory((Supplier<ClientHttpRequestFactory>) () -> factory)
                 .build();
     }
 
@@ -82,6 +97,9 @@ public class BaseClient {
             return ResponseEntity.status(e.getStatusCode())
                     .headers(headersWithoutTransferEncoding(e.getResponseHeaders()))
                     .body(e.getResponseBodyAsByteArray());
+        } catch (ResourceAccessException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(new ErrorResponse("Сервис временно недоступен, попробуйте позже"));
         }
     }
 

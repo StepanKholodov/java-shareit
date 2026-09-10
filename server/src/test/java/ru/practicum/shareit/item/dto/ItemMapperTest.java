@@ -28,16 +28,25 @@ class ItemMapperTest {
     @Test
     void toItem_mapsAllFieldsAndAssignsOwner() {
         User owner = new User(1L, "Ivan", "ivan@mail.ru");
-        ItemDto dto = new ItemDto(1L, "Дрель", "Простая дрель", true);
+        ItemDto dto = new ItemDto(null, "Дрель", "Простая дрель", true);
 
         Item item = ItemMapper.toItem(dto, owner, null);
 
-        assertThat(item.getId()).isEqualTo(1L);
         assertThat(item.getName()).isEqualTo("Дрель");
         assertThat(item.getDescription()).isEqualTo("Простая дрель");
         assertThat(item.getAvailable()).isTrue();
         assertThat(item.getOwner()).isEqualTo(owner);
         assertThat(item.getRequest()).isNull();
+    }
+
+    @Test
+    void toItem_ignoresClientSuppliedId() {
+        User owner = new User(1L, "Ivan", "ivan@mail.ru");
+        ItemDto dto = new ItemDto(99L, "Дрель", "Простая дрель", true);
+
+        Item item = ItemMapper.toItem(dto, owner, null);
+
+        assertThat(item.getId()).isNull();
     }
 
     @Test

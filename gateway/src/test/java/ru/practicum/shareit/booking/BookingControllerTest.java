@@ -107,4 +107,18 @@ class BookingControllerTest {
 
         verify(bookingClient, never()).create(anyLong(), any());
     }
+
+    @Test
+    void create_withEndBeforeStart_returns400() throws Exception {
+        BookItemRequestDto requestDto = new BookItemRequestDto(
+                10L, LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(1));
+
+        mockMvc.perform(post("/bookings")
+                        .header("X-Sharer-User-Id", 2L)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(requestDto)))
+                .andExpect(status().isBadRequest());
+
+        verify(bookingClient, never()).create(anyLong(), any());
+    }
 }
