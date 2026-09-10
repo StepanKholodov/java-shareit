@@ -26,6 +26,12 @@ CREATE TABLE IF NOT EXISTS items (
     CONSTRAINT fk_items_request FOREIGN KEY (request_id) REFERENCES requests (id)
 );
 
+-- Для БД, созданных до появления запросов на вещи: CREATE TABLE IF NOT EXISTS выше
+-- не трогает уже существующую таблицу items, поэтому колонку request_id добавляем
+-- отдельно и идемпотентно. FK-ограничение на неё сюда намеренно не выносим — ни
+-- Postgres, ни H2 не поддерживают переносимый ADD CONSTRAINT IF NOT EXISTS.
+ALTER TABLE items ADD COLUMN IF NOT EXISTS request_id BIGINT;
+
 CREATE INDEX IF NOT EXISTS idx_items_owner_id ON items (owner_id);
 CREATE INDEX IF NOT EXISTS idx_items_request_id ON items (request_id);
 
