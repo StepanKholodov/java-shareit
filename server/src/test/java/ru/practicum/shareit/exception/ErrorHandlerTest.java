@@ -2,9 +2,11 @@ package ru.practicum.shareit.exception;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -117,5 +119,21 @@ class ErrorHandlerTest {
         ErrorResponse response = errorHandler.handleDataIntegrityViolation(ex);
 
         assertThat(response.getError()).isEqualTo("Некорректные данные");
+    }
+
+    @Test
+    void handleMethodNotSupported_returnsMessageWithMethodName() {
+        HttpRequestMethodNotSupportedException ex = new HttpRequestMethodNotSupportedException(HttpMethod.PUT.name());
+
+        ErrorResponse response = errorHandler.handleMethodNotSupported(ex);
+
+        assertThat(response.getError()).isEqualTo("Метод PUT не поддерживается для этого пути");
+    }
+
+    @Test
+    void handleUnexpected_returnsGenericMessage() {
+        ErrorResponse response = errorHandler.handleUnexpected(new IllegalStateException("что-то пошло не так"));
+
+        assertThat(response.getError()).isEqualTo("Внутренняя ошибка сервера");
     }
 }

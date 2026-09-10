@@ -57,30 +57,70 @@ public class BaseClient {
                 .build();
     }
 
+    /**
+     * @param path относительный путь (резолвится относительно базового URL клиента)
+     * @return ответ сервера как есть
+     */
     protected ResponseEntity<Object> get(String path) {
         return get(path, null, null);
     }
 
+    /**
+     * @param path   относительный путь (резолвится относительно базового URL клиента)
+     * @param userId id пользователя для заголовка {@value RequestHeaders#USER_ID}, либо {@code null}
+     * @return ответ сервера как есть
+     */
     protected ResponseEntity<Object> get(String path, Long userId) {
         return get(path, userId, null);
     }
 
+    /**
+     * @param path       относительный путь, может содержать {@code {имя}}-плейсхолдеры под {@code parameters}
+     * @param userId     id пользователя для заголовка {@value RequestHeaders#USER_ID}, либо {@code null}
+     * @param parameters значения для подстановки в плейсхолдеры пути (query-параметры), либо {@code null}
+     * @return ответ сервера как есть
+     */
     protected ResponseEntity<Object> get(String path, Long userId, Map<String, Object> parameters) {
         return exchange(HttpMethod.GET, path, userId, parameters, null);
     }
 
+    /**
+     * @param path   относительный путь (резолвится относительно базового URL клиента)
+     * @param userId id пользователя для заголовка {@value RequestHeaders#USER_ID}, либо {@code null}
+     * @param body   тело запроса, сериализуемое в JSON
+     * @return ответ сервера как есть
+     */
     protected <T> ResponseEntity<Object> post(String path, Long userId, T body) {
         return exchange(HttpMethod.POST, path, userId, null, body);
     }
 
+    /**
+     * @param path   относительный путь (резолвится относительно базового URL клиента)
+     * @param userId id пользователя для заголовка {@value RequestHeaders#USER_ID}, либо {@code null}
+     * @param body   тело запроса, сериализуемое в JSON
+     * @return ответ сервера как есть
+     */
     protected <T> ResponseEntity<Object> patch(String path, Long userId, T body) {
         return exchange(HttpMethod.PATCH, path, userId, null, body);
     }
 
+    /**
+     * PATCH без тела, но с query-параметрами (например, {@code ?approved=true}).
+     *
+     * @param path       относительный путь с {@code {имя}}-плейсхолдерами под {@code parameters}
+     * @param userId     id пользователя для заголовка {@value RequestHeaders#USER_ID}, либо {@code null}
+     * @param parameters значения для подстановки в плейсхолдеры пути (query-параметры)
+     * @return ответ сервера как есть
+     */
     protected ResponseEntity<Object> patchWithParams(String path, Long userId, Map<String, Object> parameters) {
         return exchange(HttpMethod.PATCH, path, userId, parameters, null);
     }
 
+    /**
+     * @param path   относительный путь (резолвится относительно базового URL клиента)
+     * @param userId id пользователя для заголовка {@value RequestHeaders#USER_ID}, либо {@code null}
+     * @return ответ сервера как есть
+     */
     protected ResponseEntity<Object> delete(String path, Long userId) {
         return exchange(HttpMethod.DELETE, path, userId, null, null);
     }

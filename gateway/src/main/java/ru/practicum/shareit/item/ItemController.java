@@ -30,6 +30,14 @@ public class ItemController {
 
     private final ItemClient itemClient;
 
+    /**
+     * Проверяет формат данных новой вещи и проксирует запрос на сервер.
+     *
+     * @param ownerId id владельца (из заголовка {@value RequestHeaders#USER_ID})
+     * @param itemDto данные вещи (название, описание, доступность, опционально {@code requestId});
+     *                {@code id} игнорируется сервером
+     * @return ответ сервера как есть (созданная вещь либо её ошибка)
+     */
     @PostMapping
     public ResponseEntity<Object> create(@RequestHeader(RequestHeaders.USER_ID) Long ownerId,
                                           @Validated(Marker.OnCreate.class) @RequestBody ItemDto itemDto) {
@@ -37,6 +45,15 @@ public class ItemController {
         return itemClient.create(ownerId, itemDto);
     }
 
+    /**
+     * Проверяет формат переданных полей (не требуя как минимум одного) и проксирует
+     * частичное обновление вещи на сервер.
+     *
+     * @param ownerId id пользователя, выполняющего запрос (из заголовка {@value RequestHeaders#USER_ID})
+     * @param itemId  id обновляемой вещи
+     * @param itemDto новые значения полей; переданное непустое поле должно быть корректным по формату
+     * @return ответ сервера как есть (обновлённая вещь либо её ошибка, например 403 не у владельца)
+     */
     @PatchMapping("/{itemId}")
     public ResponseEntity<Object> update(@RequestHeader(RequestHeaders.USER_ID) Long ownerId,
                                           @PathVariable Long itemId,
@@ -45,24 +62,50 @@ public class ItemController {
         return itemClient.update(ownerId, itemId, itemDto);
     }
 
+    /**
+     * Проксирует запрос вещи по id на сервер без собственной валидации.
+     *
+     * @param itemId id вещи
+     * @return ответ сервера как есть (найденная вещь либо 404)
+     */
     @GetMapping("/{itemId}")
     public ResponseEntity<Object> findById(@PathVariable Long itemId) {
         log.info("Get item {}", itemId);
         return itemClient.findById(itemId);
     }
 
+    /**
+     * Проксирует запрос списка вещей владельца на сервер.
+     *
+     * @param ownerId id владельца (из заголовка {@value RequestHeaders#USER_ID})
+     * @return ответ сервера как есть (список вещей владельца)
+     */
     @GetMapping
     public ResponseEntity<Object> findAllByOwner(@RequestHeader(RequestHeaders.USER_ID) Long ownerId) {
         log.info("Get items of owner {}", ownerId);
         return itemClient.findAllByOwner(ownerId);
     }
 
+    /**
+     * Проверяет наличие обязательного параметра {@code text} и проксирует поиск на сервер.
+     *
+     * @param text текст для поиска
+     * @return ответ сервера как есть (найденные доступные вещи)
+     */
     @GetMapping("/search")
     public ResponseEntity<Object> search(@RequestParam String text) {
         log.info("Search items by text '{}'", text);
         return itemClient.search(text);
     }
 
+    /**
+     * Проверяет формат текста отзыва и проксирует его добавление на сервер.
+     *
+     * @param userId     id автора отзыва (из заголовка {@value RequestHeaders#USER_ID})
+     * @param itemId     id вещи
+     * @param commentDto текст отзыва
+     * @return ответ сервера как есть (созданный отзыв либо 400, если аренда не завершена)
+     */
     @PostMapping("/{itemId}/comment")
     public ResponseEntity<Object> addComment(@RequestHeader(RequestHeaders.USER_ID) Long userId,
                                               @PathVariable Long itemId,

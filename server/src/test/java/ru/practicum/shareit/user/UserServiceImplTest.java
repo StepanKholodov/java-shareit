@@ -62,7 +62,7 @@ class UserServiceImplTest {
     @Test
     void create_whenEmailFree_savesUser() {
         UserDto inputDto = new UserDto(null, "Ivan", "ivan@mail.ru");
-        when(userRepository.save(any(User.class))).thenReturn(user);
+        when(userRepository.saveAndFlush(any(User.class))).thenReturn(user);
 
         UserDto result = userService.create(inputDto);
 
@@ -74,7 +74,7 @@ class UserServiceImplTest {
     @Test
     void create_whenEmailTaken_throwsConflictException() {
         UserDto inputDto = new UserDto(null, "Ivan", "ivan@mail.ru");
-        when(userRepository.save(any(User.class)))
+        when(userRepository.saveAndFlush(any(User.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint \"uq_users_email\""));
 
         assertThatThrownBy(() -> userService.create(inputDto))
@@ -85,7 +85,7 @@ class UserServiceImplTest {
     @Test
     void create_whenUnrelatedConstraintViolated_propagatesRawException() {
         UserDto inputDto = new UserDto(null, "Ivan", "ivan@mail.ru");
-        when(userRepository.save(any(User.class)))
+        when(userRepository.saveAndFlush(any(User.class)))
                 .thenThrow(new DataIntegrityViolationException("value too long for type character varying(255)"));
 
         assertThatThrownBy(() -> userService.create(inputDto))
@@ -96,7 +96,7 @@ class UserServiceImplTest {
     @Test
     void update_withNewNameAndEmail_updatesBothFields() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         UserDto result = userService.update(1L, new UserDto(null, "New name", "new@mail.ru"));
 
@@ -107,7 +107,7 @@ class UserServiceImplTest {
     @Test
     void update_whenEmailTakenByAnotherUser_throwsConflictException() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.save(any(User.class)))
+        when(userRepository.saveAndFlush(any(User.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint \"uq_users_email\""));
 
         assertThatThrownBy(() -> userService.update(1L, new UserDto(null, null, "taken@mail.ru")))
@@ -118,7 +118,7 @@ class UserServiceImplTest {
     @Test
     void update_withBlankFields_keepsOriginalValues() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         UserDto result = userService.update(1L, new UserDto(null, "   ", "   "));
 
@@ -129,7 +129,7 @@ class UserServiceImplTest {
     @Test
     void update_withNullFields_keepsOriginalValues() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         UserDto result = userService.update(1L, new UserDto(null, null, null));
 

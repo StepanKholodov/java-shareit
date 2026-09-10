@@ -16,9 +16,15 @@ public interface ItemRepository extends JpaRepository<Item, Long> {
 
     List<Item> findAllByRequestIdIn(List<Long> requestIds);
 
+    /**
+     * @param text текст для поиска; спецсимволы {@code LIKE} ({@code %}, {@code _}, {@code \})
+     *             должны быть уже экранированы вызывающим кодом (см. {@code ItemServiceImpl}),
+     *             иначе они будут трактоваться как символы-маски, а не буквально
+     * @return доступные вещи, в названии или описании которых встречается текст
+     */
     @Query("select i from Item i "
             + "where i.available = true "
-            + "and (lower(i.name) like lower(concat('%', :text, '%')) "
-            + "or lower(i.description) like lower(concat('%', :text, '%')))")
+            + "and (lower(i.name) like lower(concat('%', :text, '%')) escape '\\' "
+            + "or lower(i.description) like lower(concat('%', :text, '%')) escape '\\')")
     List<Item> search(@Param("text") String text);
 }

@@ -274,6 +274,15 @@ class ItemServiceImplTest {
     }
 
     @Test
+    void search_withLikeWildcardsInText_escapesThemBeforeQuerying() {
+        when(itemRepository.search("50\\%\\_off")).thenReturn(List.of());
+
+        itemService.search("50%_off");
+
+        verify(itemRepository).search("50\\%\\_off");
+    }
+
+    @Test
     void addComment_whenBookingCompleted_savesComment() {
         when(userService.getUserById(2L)).thenReturn(booker);
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));

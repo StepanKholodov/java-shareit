@@ -3,6 +3,7 @@ package ru.practicum.shareit.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -88,5 +89,33 @@ public class ErrorHandler {
     public ErrorResponse handleTypeMismatch(MethodArgumentTypeMismatchException e) {
         log.warn("400: некорректное значение параметра {}", e.getName());
         return new ErrorResponse("Некорректное значение параметра " + e.getName());
+    }
+
+    /**
+     * Обрабатывает вызов эндпоинта неподдерживаемым HTTP-методом.
+     *
+     * @param e исключение о неподдерживаемом методе
+     * @return тело ответа {@code 405 Method Not Allowed}
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    public ErrorResponse handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
+        log.warn("405: {}", e.getMessage());
+        return new ErrorResponse("Метод " + e.getMethod() + " не поддерживается для этого пути");
+    }
+
+    /**
+     * Отлавливает любые прочие непредвиденные исключения (например, программную
+     * ошибку в контроллере или клиенте), чтобы вызывающий всегда получал единый
+     * формат {@link ErrorResponse}, а не сырую страницу ошибки Spring по умолчанию.
+     *
+     * @param e непредвиденное исключение
+     * @return тело ответа {@code 500 Internal Server Error}
+     */
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleUnexpected(Exception e) {
+        log.error("500: непредвиденная ошибка", e);
+        return new ErrorResponse("Внутренняя ошибка сервера");
     }
 }

@@ -110,7 +110,7 @@ public class ItemServiceImpl implements ItemService {
         if (text == null || text.isBlank()) {
             return List.of();
         }
-        return itemRepository.search(text).stream()
+        return itemRepository.search(escapeForLike(text)).stream()
                 .map(ItemMapper::toItemDto)
                 .collect(Collectors.toList());
     }
@@ -163,6 +163,20 @@ public class ItemServiceImpl implements ItemService {
     private Item getItemOrThrow(Long itemId) {
         return itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Вещь с id " + itemId + " не найдена"));
+    }
+
+    /**
+     * Экранирует спецсимволы {@code LIKE} ({@code \}, {@code %}, {@code _}) в пользовательском
+     * тексте поиска, чтобы они трактовались буквально, а не как символы-маски
+     * (см. {@code escape '\'} в {@link ItemRepository#search}).
+     *
+     * @param text исходный текст поиска
+     * @return текст с экранированными спецсимволами
+     */
+    private String escapeForLike(String text) {
+        return text.replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
     }
 
     private ItemRequest getRequestOrThrow(Long requestId) {

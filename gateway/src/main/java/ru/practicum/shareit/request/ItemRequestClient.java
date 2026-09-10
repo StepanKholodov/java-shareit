@@ -21,18 +21,36 @@ public class ItemRequestClient extends BaseClient {
         super(buildRestTemplate(builder, serverUrl + API_PREFIX));
     }
 
+    /**
+     * @param requestorId id пользователя, создающего запрос
+     * @param requestDto  данные запроса (описание)
+     * @return ответ сервера как есть ({@code POST /requests})
+     */
     public ResponseEntity<Object> create(Long requestorId, ItemRequestDto requestDto) {
         return post("", requestorId, requestDto);
     }
 
+    /**
+     * @param requestorId id пользователя
+     * @return ответ сервера как есть ({@code GET /requests})
+     */
     public ResponseEntity<Object> findOwn(Long requestorId) {
         return get("", requestorId);
     }
 
+    /**
+     * @param userId id пользователя, выполняющего запрос
+     * @return ответ сервера как есть ({@code GET /requests/all})
+     */
     public ResponseEntity<Object> findAllByOthers(Long userId) {
         return get("/all", userId);
     }
 
+    /**
+     * @param userId    id пользователя, выполняющего запрос
+     * @param requestId id запроса
+     * @return ответ сервера как есть ({@code GET /requests/{requestId}})
+     */
     public ResponseEntity<Object> findById(Long userId, Long requestId) {
         return get("/" + requestId, userId);
     }

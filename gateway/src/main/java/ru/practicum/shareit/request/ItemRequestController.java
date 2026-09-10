@@ -25,6 +25,13 @@ public class ItemRequestController {
 
     private final ItemRequestClient itemRequestClient;
 
+    /**
+     * Проверяет формат описания запроса и проксирует его создание на сервер.
+     *
+     * @param requestorId id пользователя, создающего запрос (из заголовка {@value RequestHeaders#USER_ID})
+     * @param requestDto  данные запроса (описание)
+     * @return ответ сервера как есть (созданный запрос либо его ошибка)
+     */
     @PostMapping
     public ResponseEntity<Object> create(@RequestHeader(RequestHeaders.USER_ID) Long requestorId,
                                           @Valid @RequestBody ItemRequestDto requestDto) {
@@ -32,18 +39,37 @@ public class ItemRequestController {
         return itemRequestClient.create(requestorId, requestDto);
     }
 
+    /**
+     * Проксирует запрос собственных запросов пользователя на сервер без собственной валидации.
+     *
+     * @param requestorId id пользователя (из заголовка {@value RequestHeaders#USER_ID})
+     * @return ответ сервера как есть (запросы пользователя вместе с ответами на них)
+     */
     @GetMapping
     public ResponseEntity<Object> findOwn(@RequestHeader(RequestHeaders.USER_ID) Long requestorId) {
         log.info("Get own item requests of user {}", requestorId);
         return itemRequestClient.findOwn(requestorId);
     }
 
+    /**
+     * Проксирует запрос запросов других пользователей на сервер без собственной валидации.
+     *
+     * @param userId id пользователя, выполняющего запрос (из заголовка {@value RequestHeaders#USER_ID})
+     * @return ответ сервера как есть (запросы других пользователей)
+     */
     @GetMapping("/all")
     public ResponseEntity<Object> findAllByOthers(@RequestHeader(RequestHeaders.USER_ID) Long userId) {
         log.info("Get item requests of other users for user {}", userId);
         return itemRequestClient.findAllByOthers(userId);
     }
 
+    /**
+     * Проксирует запрос запроса по id на сервер без собственной валидации.
+     *
+     * @param userId    id пользователя, выполняющего запрос (из заголовка {@value RequestHeaders#USER_ID})
+     * @param requestId id запроса
+     * @return ответ сервера как есть (найденный запрос либо 404)
+     */
     @GetMapping("/{requestId}")
     public ResponseEntity<Object> findById(@RequestHeader(RequestHeaders.USER_ID) Long userId,
                                             @PathVariable Long requestId) {
