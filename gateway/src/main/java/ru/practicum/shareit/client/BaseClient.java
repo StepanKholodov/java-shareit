@@ -1,0 +1,164 @@
+package ru.practicum.shareit.client;
+
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.core5.util.Timeout;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.DefaultUriBuilderFactory;
+import ru.practicum.shareit.exception.ErrorResponse;
+import ru.practicum.shareit.web.RequestHeaders;
+
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+
+/**
+ * Базовый REST-клиент для обращения gateway к серверу. Прокидывает заголовок
+ * {@value RequestHeaders#USER_ID} и при ошибке на стороне сервера возвращает
+ * клиенту тот же статус и тело ответа, что вернул сервер.
+ */
+public class BaseClient {
+
+    protected final RestTemplate rest;
+
+    protected BaseClient(RestTemplate rest) {
+        this.rest = rest;
+    }
+
+    /**
+     * @param builder билдер, предоставляемый Spring Boot автоконфигурацией
+     * @param baseUrl базовый URL сервера вместе с префиксом API конкретного клиента
+     * @return {@link RestTemplate}, настроенный на базовый URL и Apache HttpClient 5
+     */
+    protected static RestTemplate buildRestTemplate(RestTemplateBuilder builder, String baseUrl) {
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(Timeout.ofSeconds(5))
+                .setResponseTimeout(Timeout.ofSeconds(10))
+                .build();
+        CloseableHttpClient httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(requestConfig)
+                .build();
+        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
+        return builder
+                .uriTemplateHandler(new DefaultUriBuilderFactory(baseUrl))
+                .requestFactory((Supplier<ClientHttpRequestFactory>) () -> factory)
+                .build();
+    }
+
+    /**
+     * @param path относительный путь (резолвится относительно базового URL клиента)
+     * @return ответ сервера как есть
+     */
+    protected ResponseEntity<Object> get(String path) {
+        return get(path, null, null);
+    }
+
+    /**
+     * @param path   относительный путь (резолвится относительно базового URL клиента)
+     * @param userId id пользователя для заголовка {@value RequestHeaders#USER_ID}, либо {@code null}
+     * @return ответ сервера как есть
+     */
+    protected ResponseEntity<Object> get(String path, Long userId) {
+        return get(path, userId, null);
+    }
+
+    /**
+     * @param path       относительный путь, может содержать {@code {имя}}-плейсхолдеры под {@code parameters}
+     * @param userId     id пользователя для заголовка {@value RequestHeaders#USER_ID}, либо {@code null}
+     * @param parameters значения для подстановки в плейсхолдеры пути (query-параметры), либо {@code null}
+     * @return ответ сервера как есть
+     */
+    protected ResponseEntity<Object> get(String path, Long userId, Map<String, Object> parameters) {
+        return exchange(HttpMethod.GET, path, userId, parameters, null);
+    }
+
+    /**
+     * @param path   относительный путь (резолвится относительно базового URL клиента)
+     * @param userId id пользователя для заголовка {@value RequestHeaders#USER_ID}, либо {@code null}
+     * @param body   тело запроса, сериализуемое в JSON
+     * @return ответ сервера как есть
+     */
+    protected <T> ResponseEntity<Object> post(String path, Long userId, T body) {
+        return exchange(HttpMethod.POST, path, userId, null, body);
+    }
+
+    /**
+     * @param path   относительный путь (резолвится относительно базового URL клиента)
+     * @param userId id пользователя для заголовка {@value RequestHeaders#USER_ID}, либо {@code null}
+     * @param body   тело запроса, сериализуемое в JSON
+     * @return ответ сервера как есть
+     */
+    protected <T> ResponseEntity<Object> patch(String path, Long userId, T body) {
+        return exchange(HttpMethod.PATCH, path, userId, null, body);
+    }
+
+    /**
+     * PATCH без тела, но с query-параметрами (например, {@code ?approved=true}).
+     *
+     * @param path       относительный путь с {@code {имя}}-плейсхолдерами под {@code parameters}
+     * @param userId     id пользователя для заголовка {@value RequestHeaders#USER_ID}, либо {@code null}
+     * @param parameters значения для подстановки в плейсхолдеры пути (query-параметры)
+     * @return ответ сервера как есть
+     */
+    protected ResponseEntity<Object> patchWithParams(String path, Long userId, Map<String, Object> parameters) {
+        return exchange(HttpMethod.PATCH, path, userId, parameters, null);
+    }
+
+    /**
+     * @param path   относительный путь (резолвится относительно базового URL клиента)
+     * @param userId id пользователя для заголовка {@value RequestHeaders#USER_ID}, либо {@code null}
+     * @return ответ сервера как есть
+     */
+    protected ResponseEntity<Object> delete(String path, Long userId) {
+        return exchange(HttpMethod.DELETE, path, userId, null, null);
+    }
+
+    private <T> ResponseEntity<Object> exchange(HttpMethod method, String path, Long userId,
+                                                 Map<String, Object> parameters, T body) {
+        HttpEntity<T> requestEntity = new HttpEntity<>(body, defaultHeaders(userId));
+        try {
+            if (parameters != null) {
+                return rest.exchange(path, method, requestEntity, Object.class, parameters);
+            }
+            return rest.exchange(path, method, requestEntity, Object.class);
+        } catch (HttpStatusCodeException e) {
+            return ResponseEntity.status(e.getStatusCode())
+                    .headers(headersWithoutTransferEncoding(e.getResponseHeaders()))
+                    .body(e.getResponseBodyAsByteArray());
+        } catch (ResourceAccessException e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(new ErrorResponse("Сервис временно недоступен, попробуйте позже"));
+        }
+    }
+
+    private HttpHeaders defaultHeaders(Long userId) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        if (userId != null) {
+            headers.set(RequestHeaders.USER_ID, String.valueOf(userId));
+        }
+        return headers;
+    }
+
+    private HttpHeaders headersWithoutTransferEncoding(HttpHeaders source) {
+        HttpHeaders headers = new HttpHeaders();
+        if (source != null) {
+            headers.addAll(source);
+            headers.remove(HttpHeaders.TRANSFER_ENCODING);
+        }
+        return headers;
+    }
+}
